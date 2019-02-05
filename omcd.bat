@@ -132,7 +132,7 @@ echo Done.
 if defined SHOW_DEBUG echo Producing M4 output.
 echo changecom(/*,*/)dnl > %M4_OUTPUT%
 echo changequote dnl >> %M4_OUTPUT%
-echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(``````$*'''''', `^<', `^&lt;'), `^>', `^&gt;'), `:', `^&#58;'), `,\w', `, \1'), `\\n', `^<BR/^>')')dnl >> %M4_OUTPUT%
+echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(``````$*'''''', `^<', `^&lt;'), `^>', `^&gt;'), `:', `^&#58;'), `,(\w)', `, \1'), `\\n', `^<BR/^>')')dnl >> %M4_OUTPUT%
 echo define(GET_CLASS_NAME, `REPLACE_HTML($1)')dnl >> %M4_OUTPUT%
 echo %KEYWORD_TEXT_COLOR%dnl >> %M4_OUTPUT%
 echo %KEYWORD_TEXT_DECORATION%dnl >> %M4_OUTPUT%
