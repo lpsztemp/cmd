@@ -257,7 +257,7 @@ echo.
 echo CLASS_BEGIN(`ClassTemplate2', class T)
 echo CLASS_MEMBER(-private_function(x:int, k:double))
 echo CLASS_MEMBER(#protected_function(const char* pString, std::size_t cchString))
-echo CLASS_MEMBER(+public_function(const std::string^^& str))
+echo CLASS_MEMBER(+public_function(const std::string^& str))
 echo STATIC_MEMBER(+public_static_member:const int)
 echo CLASS_END
 echo.
