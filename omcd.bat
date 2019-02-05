@@ -1,4 +1,5 @@
 @echo off
+setlocal ENABLEDELAYEDEXPANSION
 
 set DOT_ONLY=
 set M4_ONLY=
@@ -9,6 +10,7 @@ set OUTPUT_FILE=
 set DOT_INPUT=%TMP%\dotscript.m4
 set DOT_OUTPUT=%TMP%\dotscript.dot
 set M4_OUTPUT=%TMP%\m4rules.m4
+set M4DIFICATION_OUTPUT=%TMP%\m4dified.oo
 set SHOW_DEBUG=
 set VIEW_IMAGE=
 set KEYWORD_TEXT_DECORATION=
@@ -89,7 +91,7 @@ if not defined KEYWORD_TEXT_DECORATION set KEYWORD_TEXT_DECORATION=define^(HIGHL
 
 rem ==Those are checks of input for debugging==
 if defined SHOW_DEBUG (
-	echo DOT_ONLY="%DOT_NOLY%"
+	echo DOT_ONLY="%DOT_ONLY%"
 	echo M4_ONLY="%M4_ONLY%"
 	echo IMG_TYPE="%IMG_TYPE%"
 	echo SHOW_HELP="%SHOW_HELP%"
@@ -107,16 +109,37 @@ if defined SHOW_DEBUG (
 	echo.
 )
 
+if not exist %INPUT_FILE% (
+	echo Error: input file %INPUT_FILE% does not exist.
+	goto end
+)
+
+if defined SHOW_DEBUG echo Performing M4-dificaton of %INPUT_FILE%.
+
+(
+	for /f "usebackqdelims=" %%a in ("%INPUT_FILE%") do (
+		set "line=%%a"
+		set "line=!line:&=&amp;!"
+		set "line=!line:#=&#35;!"
+		set "line=!line:\[=&#91;!"
+		set "line=!line:\]=&#93;!"
+		echo !line!
+	)
+) > %M4DIFICATION_OUTPUT%
+
+echo Done.
+
 if defined SHOW_DEBUG echo Producing M4 output.
 echo changecom(/*,*/)dnl > %M4_OUTPUT%
-echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(patsubst(patsubst(````````$*'''''''', `^&', `^&amp;'), `#', `^&#35;'), `^<', `^&lt;'), `^>', `^&gt;'), `:', `^&#58;'), `,', `, '), `\\n', `^<BR/^>')')dnl >> %M4_OUTPUT%
+echo changequote dnl >> %M4_OUTPUT%
+echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(``````$*'''''', `^<', `^&lt;'), `^>', `^&gt;'), `:', `^&#58;'), `,\w', `, \1'), `\\n', `^<BR/^>')')dnl >> %M4_OUTPUT%
 echo define(GET_CLASS_NAME, `REPLACE_HTML($1)')dnl >> %M4_OUTPUT%
 echo %KEYWORD_TEXT_COLOR%dnl >> %M4_OUTPUT%
 echo %KEYWORD_TEXT_DECORATION%dnl >> %M4_OUTPUT%
 echo define(HIGHLIGHT_TAG, `HIGHLIGHT_TAG_COLOR(HIGHLIGHT_TAG_DECORATION(`$1'))')dnl >> %M4_OUTPUT%
 echo define(HIGHLIGHT_TAGS, `ifelse(`$#', `0', `none', `$#', 1, `$1', `$#', 2, `patsubst(`$1', `\b$2\b', HIGHLIGHT_TAG(`$2'))', `$0($0(``$1'', $2), shift(shift($@)))')')dnl >> %M4_OUTPUT%
 echo define(HIGHLIGHT_KEYWORDS, `HIGHLIGHT_TAGS(``$*'', `class', `template', `const', `volatile', `struct', `int', `long', `short', `char', `double', `float', `bool', `true', `false', `auto', `typedef')')dnl >> %M4_OUTPUT%
-echo define(NODE_NAME, `translit(`$1', `^<^>:, .*+-()^&#-', `_______________')')dnl >> %M4_OUTPUT%
+echo define(NODE_NAME, `translit(`$1', `^<^>:, .*+-()^&#-;', `0123456789abcdefgh')')dnl >> %M4_OUTPUT%
 echo define(CLASS_COMMENT_BOX, `NODE_NAME(`$1')`'_COMMENT_BOX')dnl >> %M4_OUTPUT%
 echo define(PORT_NAME, `NODE_NAME(`$*')')dnl >> %M4_OUTPUT%
 echo define(CLASS_MEMBER_COMMENT_BOX, `PORT_NAME(`$1', `$2')'``''_COMMENT_BOX)dnl >> %M4_OUTPUT%
@@ -153,9 +176,11 @@ echo graph [dpi=300]; >> %DOT_INPUT%
 echo node [shape=box]; >> %DOT_INPUT%
 echo edge [labeldistance="1.5", labelfontsize="10", arrowhead="none"]; >> %DOT_INPUT%
 echo rankdir=BT; >> %DOT_INPUT%
-type %INPUT_FILE% >> %DOT_INPUT%
+type %M4DIFICATION_OUTPUT% >> %DOT_INPUT%
 echo. >> %DOT_INPUT%
 echo } >> %DOT_INPUT%
+
+if defined SHOW_DEBUG echo Done.
 
 if defined SHOW_DEBUG echo Performing M4 substitution.
 m4 %M4_OUTPUT% %DOT_INPUT% > %DOT_OUTPUT% || goto end_cleanup_files
@@ -169,15 +194,12 @@ if defined SHOW_DEBUG echo Done.
 
 if defined VIEW_IMAGE %OUTPUT_FILE%
 
-rem (set OUTPUT=diagram.jpg) else set OUTPUT=%1
-rem m4 predefined_items.m4 src.gv | dot -Tjpg -o%OUTPUT%
-
 goto end_cleanup_files
 
 :show_usage
 echo Builds an Object Model Class Diagram by their dot and M4 definitions
 echo Call syntax:
-echo omcd.bat ^<[-d^|-m4^|-T diagram_type -x] [-kc ^<color^>] -kd [normal^|italic^|bold^] ^<input_script^> ^<output_script^>^> ^| -h
+echo omcd.bat ^<[-d^|-m4^|-T diagram_type -x] [-kc ^<color^>] -kd [normal^|italic^|bold^] [-dbg] ^<input_script^> ^<output_script^>^> ^| -h
 echo -d - Make necessary substitutes and produce dot-syntax graph definition only.
 echo -m4 - Produce only a file with m4 rules. The input_script is ignored in this case.
 echo -T diagram_type - Specifies an image type used to visialize the graph. It must be supported by graphviz. By default it is jpg.
@@ -194,6 +216,7 @@ echo 	Definitions of classes are specified using three macros: CLASS_BEGIN, CLAS
 echo 	All invocations of the CLASS_MEMBER and STATIC_MEMBER macros must be encompassed by only one CLASS_BEGIN-CLASS_END pair.
 echo 	The relations between different classes are specified as for a dot compiler, i.e. with arrows ("-^>") with the difference that all node names must be produced via the NODE_NAME macro invoked with an actual name of the class. Also, the type of the relation is defined by the macros ASSOCIATION, IMPLEMENTATION, INHERITANCE, AGGREGATION or COMPOSITION. This type, which may optionally be accompanied by headlabel="text", taillabel="text", and label="text" specifications, must be enclosed by square brackets ("[" and "]") and placed to the right of the relation specification. A headlabel mark specifies a text associated with an object of the relation, i.e. a class receiving the relation. A taillabel mark specifies a subject of the relation, i.e. a class initiating the relation. Also, a label mark can associate some text with the relation itself. All of the marks are optional. For instance, if a class A aggregates a class B, then their relation is specified as:
 echo	NODE_NAME(A)-^>NODE_NAME(B) [AGGREGATION, headlabel="A label near the class A", taillabel = "A label near the class B", label = "A description of the relation"].
+echo	If a class, e.g. a class template, specification requires square brackets, i.e. "[" and\or "]", they must be escaped in the source specification with a backslash character, i.e. "\[" and "\]" respectively.
 echo 	There are three kinds of comments supported by this processor.
 echo 	The first one is a source comment that should not be displayed in any of output files, should it be the M4 script, the dot script or the final image. Those comments are specified with M4 dnl builtin macro which causes the interpreter to ignore the rest of the line and omit it when producing output. Those comments can contain non-ASCII characters.
 echo 	The second type is for graphviz comments. Those are specified in C-like manner, i.e. either as "//" (single-line comments) or as "/*" and "*/" pairs for multiline purposes. These comments will be passed by the M4 on its output as-is. Note the limitations of these comments. First, the characters of the comment marks, if they are inside a node name M4 definition, are replaced by special characters to avoid conflicts with the dot syntax. Therefore, the comment will not be there anymore when the node is passed from M4 to graphviz. This means that the only place to safely specify C-like comments is outside of a node definition. But the graphviz implementation of dot does not support non-ASCII characters outside of labels or any text in a sence of the dot syntax. Both of these flaws mean that C-like comments cannot be specified with non-ASCII symbols.
@@ -231,6 +254,22 @@ echo CLASS_MEMBER(+public_function(const std::string^& str))
 echo STATIC_MEMBER(+public_static_member:const int)
 echo CLASS_END
 echo.
+echo CLASS_BEGIN(`ClassTemplate2', class T)
+echo CLASS_MEMBER(-private_function(x:int, k:double))
+echo CLASS_MEMBER(#protected_function(const char* pString, std::size_t cchString))
+echo CLASS_MEMBER(+public_function(const std::string^^& str))
+echo STATIC_MEMBER(+public_static_member:const int)
+echo CLASS_END
+echo.
+echo CLASS_BEGIN(`ClassTemplate2^<T\[\]^>', class T)
+echo CLASS_MEMBER(-private_function(x:int, k:double))
+echo CLASS_MEMBER(#protected_function(const char* pString, std::size_t cchString))
+echo CLASS_MEMBER(+public_function(const std::string^& str))
+echo STATIC_MEMBER(+public_static_member:const int)
+echo CLASS_END
+echo.
+echo NODE_NAME(`ClassTemplate2^<T\[\]^>')-^>NODE_NAME(`ClassTemplate2') [ASSOCIATION]
+echo.
 echo NODE_NAME(ImplementationClass)-^>NODE_NAME(Interface1) [IMPLEMENTATION]
 echo NODE_NAME(ImplementationClass)-^>NODE_NAME(Interface2) [IMPLEMENTATION]
 echo NODE_NAME(DerivedClass)-^>NODE_NAME(BaseClass) [INHERITANCE]
@@ -242,7 +281,7 @@ echo NODE_NAME(Association2)-^>NODE_NAME(Interface1)[IMPLEMENTATION]
 echo NODE_NAME(Association1)-^>NODE_NAME(Interface1)[IMPLEMENTATION]
 echo NODE_NAME(`Composition')-^>NODE_NAME(Element) [COMPOSITION, headlabel="*", taillabel="1"]
 echo.
-echo define(MNN, `NODE_NAME($@)') dnl One has access M4 commands...
+echo define(MNN, `NODE_NAME($@)') dnl One has access to M4 commands...
 echo define(Specialization, ``ClassTemplate^<template_type_param*, 123, int, void*^>', class template_type_param') /*...and as well as dot commands...*/
 echo define(Generalization, `ClassTemplate, class template_type_param, template ^<class...^> class...template_template_param') //...like this
 echo.
@@ -263,6 +302,7 @@ goto end
 :end_cleanup_files
 if defined SHOW_DEBUG set DELETE_SWITCH=/S
 
+if exist %M4DIFICATION_OUTPUT% del %M4DIFICATION_OUTPUT%
 if exist %DOT_INPUT% del %DELETE_SWITCH% %DOT_INPUT%
 if exist %DOT_OUTPUT% (
 	if not defined DOT_ONLY del %DELETE_SWITCH% %DOT_OUTPUT%
@@ -286,3 +326,4 @@ set SHOW_DEBUG=
 set VIEW_IMAGE=
 set KEYWORD_TEXT_DECORATION=
 set KEYWORD_TEXT_COLOR=
+set M4DIFICATION_OUTPUT=
