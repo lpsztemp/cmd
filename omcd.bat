@@ -17,40 +17,39 @@ set KEYWORD_TEXT_DECORATION=
 set KEYWORD_TEXT_COLOR=
 
 :parse_command
-if "%1"=="" goto check_params
-if "%1"=="-m4" set M4_ONLY=1 && shift && goto parse_command
-if "%1"=="-d" set DOT_ONLY=1 && shift && goto parse_command
-if "%1"=="-T" goto set_type
-if "%1"=="-h" set SHOW_HELP=1 && shift && goto parse_command
-if "%1"=="-x" set VIEW_IMAGE=1 && shift && goto parse_command
-if "%1"=="-dbg" set SHOW_DEBUG=1 && shift && goto parse_command
-if "%1"=="-kc" goto set_keyword_color
-if "%1"=="-kd" goto set_keyword_decoration
-if not defined INPUT_FILE set INPUT_FILE=%1 && shift && goto parse_command
-if not defined OUTPUT_FILE set OUTPUT_FILE=%1 && shift && goto parse_command
+if "%~1"=="" goto check_params
+if "%~1"=="-m4" set M4_ONLY=1 && shift && goto parse_command
+if "%~1"=="-d" set DOT_ONLY=1 && shift && goto parse_command
+if "%~1"=="-T" goto set_type
+if "%~1"=="-h" set SHOW_HELP=1 && shift && goto parse_command
+if "%~1"=="-x" set VIEW_IMAGE=1 && shift && goto parse_command
+if "%~1"=="-dbg" set SHOW_DEBUG=1 && shift && goto parse_command
+if "%~1"=="-kc" goto set_keyword_color
+if "%~1"=="-kd" goto set_keyword_decoration
+if not defined INPUT_FILE set "INPUT_FILE=%~1" && shift && goto parse_command
+if not defined OUTPUT_FILE set "OUTPUT_FILE=%~1" && shift && goto parse_command
 goto invalid_usage
-
 
 :set_type
 shift
-if "%1"=="" goto invalid_usage
+if "%~1"=="" goto invalid_usage
 set IMG_TYPE=%1
 shift
 goto parse_command
 
 :set_keyword_color
 shift
-if "%1"=="" goto invalid_usage
+if "%~1"=="" goto invalid_usage
 set KEYWORD_TEXT_COLOR=define^(HIGHLIGHT_TAG_COLOR, `^^^<FONT COLOR="%1"^^^>$1^^^</FONT^^^>'^)
 shift
 goto parse_command
 
 :set_keyword_decoration
 shift
-if "%1"=="" goto invalid_usage
-if "%1"=="normal" set KEYWORD_TEXT_DECORATION=define^(HIGHLIGHT_TAG_DECORATION, $1^) && shift && goto parse_command
-if "%1"=="italic" set KEYWORD_TEXT_DECORATION=define^(HIGHLIGHT_TAG_DECORATION, `^^^<I^^^>$1^^^</I^^^>'^) && shift && goto parse_command
-if "%1"=="bold" set KEYWORD_TEXT_DECORATION=define^(HIGHLIGHT_TAG_DECORATION, `^^^<B^^^>$1^^^</B^^^>'^) && shift && goto parse_command
+if "%~1"=="" goto invalid_usage
+if "%~1"=="normal" set KEYWORD_TEXT_DECORATION=define^(HIGHLIGHT_TAG_DECORATION, $1^) && shift && goto parse_command
+if "%~1"=="italic" set KEYWORD_TEXT_DECORATION=define^(HIGHLIGHT_TAG_DECORATION, `^^^<I^^^>$1^^^</I^^^>'^) && shift && goto parse_command
+if "%~1"=="bold" set KEYWORD_TEXT_DECORATION=define^(HIGHLIGHT_TAG_DECORATION, `^^^<B^^^>$1^^^</B^^^>'^) && shift && goto parse_command
 goto invalid_usage
 
 :check_params
@@ -109,12 +108,12 @@ if defined SHOW_DEBUG (
 	echo.
 )
 
-if not exist %INPUT_FILE% (
-	echo Error: input file %INPUT_FILE% does not exist.
+if not exist "%INPUT_FILE%" (
+	echo Error: input file "%INPUT_FILE%" does not exist.
 	goto end
 )
 
-if defined SHOW_DEBUG echo Performing M4-dificaton of %INPUT_FILE%.
+if defined SHOW_DEBUG echo Performing M4-dificaton of "%INPUT_FILE%".
 
 (
 	for /f "usebackqdelims=" %%a in ("%INPUT_FILE%") do (
@@ -130,69 +129,69 @@ if defined SHOW_DEBUG echo Performing M4-dificaton of %INPUT_FILE%.
 echo Done.
 
 if defined SHOW_DEBUG echo Producing M4 output.
-echo changecom(/*,*/)dnl > %M4_OUTPUT%
-echo changequote dnl >> %M4_OUTPUT%
-echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(``````$*'''''', `^<', `^&lt;'), `^>', `^&gt;'), `:', `^&#58;'), `,(\w)', `, \1'), `\\n', `^<BR/^>')')dnl >> %M4_OUTPUT%
-echo define(GET_CLASS_NAME, `REPLACE_HTML($1)')dnl >> %M4_OUTPUT%
-echo %KEYWORD_TEXT_COLOR%dnl >> %M4_OUTPUT%
-echo %KEYWORD_TEXT_DECORATION%dnl >> %M4_OUTPUT%
-echo define(HIGHLIGHT_TAG, `HIGHLIGHT_TAG_COLOR(HIGHLIGHT_TAG_DECORATION(`$1'))')dnl >> %M4_OUTPUT%
-echo define(HIGHLIGHT_TAGS, `ifelse(`$#', `0', `none', `$#', 1, `$1', `$#', 2, `patsubst(`$1', `\b$2\b', HIGHLIGHT_TAG(`$2'))', `$0($0(``$1'', $2), shift(shift($@)))')')dnl >> %M4_OUTPUT%
-echo define(HIGHLIGHT_KEYWORDS, `HIGHLIGHT_TAGS(``$*'', `class', `template', `const', `volatile', `struct', `int', `long', `short', `char', `double', `float', `bool', `true', `false', `auto', `typedef')')dnl >> %M4_OUTPUT%
-echo define(NODE_NAME, `translit(`$1', `^<^>:, .*+-()^&#-;', `0123456789abcdefgh')')dnl >> %M4_OUTPUT%
-echo define(CLASS_COMMENT_BOX, `NODE_NAME(`$1')`'_COMMENT_BOX')dnl >> %M4_OUTPUT%
-echo define(PORT_NAME, `NODE_NAME(`$*')')dnl >> %M4_OUTPUT%
-echo define(CLASS_MEMBER_COMMENT_BOX, `PORT_NAME(`$1', `$2')'``''_COMMENT_BOX)dnl >> %M4_OUTPUT%
-echo define(IMPLEMENTATION, ``style=dashed,arrowhead=empty'')dnl >> %M4_OUTPUT%
-echo define(INHERITANCE, ``style=solid,arrowhead=normal'')dnl >> %M4_OUTPUT%
-echo define(AGGREGATION, ``style=solid,arrowhead=odiamond'')dnl >> %M4_OUTPUT%
-echo define(COMPOSITION, ``style=solid,arrowhead=diamond'')dnl >> %M4_OUTPUT%
-echo define(ASSOCIATION, ``style=solid,arrowhead=none,dir=none'')dnl >> %M4_OUTPUT%
-echo define(CLASS_BEGIN,dnl >> %M4_OUTPUT%
-echo 	`ifelse(`$#', `0',dnl >> %M4_OUTPUT%
-echo 		`_unnamed_node[color=red, label=^< dnl >> %M4_OUTPUT%
-echo 			^<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0"^> dnl >> %M4_OUTPUT%
-echo 				^<TR^>^<TD align="left"^>HIGHLIGHT_KEYWORDS(`class') ^<B^>_UNNAMED^</B^>',  >> %M4_OUTPUT%
-echo 		pushdef(`CURRENT_CLASS_NAME', NODE_NAME(`$1'))dnl >> %M4_OUTPUT%
-echo 		`NODE_NAME(`$1')'`[label=^< dnl >> %M4_OUTPUT%
-echo 			^<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0"^> dnl >> %M4_OUTPUT%
-echo 				^<TR^>^<TD align="left"^>'HIGHLIGHT_KEYWORDS(ifelse(`$#', `1', `', `template^&lt;'`REPLACE_HTML(shift($@))'`^&gt;^</TD^>^</TR^>^<TR^>^<TD ALIGN="left"^>')`class ^<B^>'REPLACE_HTML(``$1'')^</B^>))'`^</TD^>^</TR^>')dnl  >> %M4_OUTPUT%
-echo define(CLASS_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CLASS_NAME(),`$*')'`"^>^&nbsp;^&nbsp;^&nbsp;'`HIGHLIGHT_KEYWORDS(REPLACE_HTML(`$*'))'`^</TD^>^</TR^>')dnl  >> %M4_OUTPUT%
-echo define(STATIC_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CLASS_NAME(),`$*')'`"^>^&nbsp;^&nbsp;^&nbsp;^<U^>'`HIGHLIGHT_KEYWORDS(REPLACE_HTML(`$*'))'`^</U^>^</TD^>^</TR^>')dnl  >> %M4_OUTPUT%
-echo define(CLASS_END, popdef(`CURRENT_CLASS_NAME')`^</TABLE^>^>];')dnl  >> %M4_OUTPUT%
-echo define(COMMENT, `ifelse(`$#', `2', CLASS_COMMENT_BOX(`$1') [shape=box`,' label=^"`$2'^"] >> %M4_OUTPUT%
-echo { rank=same; CLASS_COMMENT_BOX(`$1'); `NODE_NAME(`$1')';} >> %M4_OUTPUT%
-echo CLASS_COMMENT_BOX(`$1')-^>`NODE_NAME(`$1')' [constraint=false`,' arrowhead=none`,'dir=none], CLASS_MEMBER_COMMENT_BOX(`$1', `$2') [shape=box`,' label="`$3'"] >> %M4_OUTPUT%
-REM echo { rank=same; CLASS_MEMBER_COMMENT_BOX(`$1', `$2'); `NODE_NAME(`$1')';} >> %M4_OUTPUT%
-echo CLASS_MEMBER_COMMENT_BOX(`$1', `$2')-^>$1:``''PORT_NAME(`$1', `$2') [arrowhead=none`,'dir=none])')dnl >> %M4_OUTPUT%
+echo changecom(/*,*/)dnl > "%M4_OUTPUT%"
+echo changequote dnl >> "%M4_OUTPUT%"
+echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(``````$*'''''', `^<', `^&lt;'), `^>', `^&gt;'), `:', `^&#58;'), `,(\w)', `, \1'), `\\n', `^<BR/^>')')dnl >> "%M4_OUTPUT%"
+echo define(GET_CLASS_NAME, `REPLACE_HTML($1)')dnl >> "%M4_OUTPUT%"
+echo %KEYWORD_TEXT_COLOR%dnl >> "%M4_OUTPUT%"
+echo %KEYWORD_TEXT_DECORATION%dnl >> "%M4_OUTPUT%"
+echo define(HIGHLIGHT_TAG, `HIGHLIGHT_TAG_COLOR(HIGHLIGHT_TAG_DECORATION(`$1'))')dnl >> "%M4_OUTPUT%"
+echo define(HIGHLIGHT_TAGS, `ifelse(`$#', `0', `none', `$#', 1, `$1', `$#', 2, `patsubst(`$1', `\b$2\b', HIGHLIGHT_TAG(`$2'))', `$0($0(``$1'', $2), shift(shift($@)))')')dnl >> "%M4_OUTPUT%"
+echo define(HIGHLIGHT_KEYWORDS, `HIGHLIGHT_TAGS(``$*'', `class', `template', `const', `volatile', `struct', `int', `long', `short', `char', `double', `float', `bool', `true', `false', `auto', `typedef', `noexcept', `enum', `constexpr')')dnl >> "%M4_OUTPUT%"
+echo define(NODE_NAME, `translit(`$1', `^<^>:, .*+-()^&#-;', `0123456789abcdefgh')')dnl >> "%M4_OUTPUT%"
+echo define(CLASS_COMMENT_BOX, `NODE_NAME(`$1')`'_COMMENT_BOX')dnl >> "%M4_OUTPUT%"
+echo define(PORT_NAME, `NODE_NAME(`$*')')dnl >> "%M4_OUTPUT%"
+echo define(CLASS_MEMBER_COMMENT_BOX, `PORT_NAME(`$1', `$2')'``''_COMMENT_BOX)dnl >> "%M4_OUTPUT%"
+echo define(IMPLEMENTATION, ``style=dashed,arrowhead=empty'')dnl >> "%M4_OUTPUT%"
+echo define(INHERITANCE, ``style=solid,arrowhead=normal'')dnl >> "%M4_OUTPUT%"
+echo define(AGGREGATION, ``style=solid,arrowhead=odiamond'')dnl >> "%M4_OUTPUT%"
+echo define(COMPOSITION, ``style=solid,arrowhead=diamond'')dnl >> "%M4_OUTPUT%"
+echo define(ASSOCIATION, ``style=solid,arrowhead=none,dir=none'')dnl >> "%M4_OUTPUT%"
+echo define(CLASS_BEGIN,dnl >> "%M4_OUTPUT%"
+echo 	`ifelse(`$#', `0',dnl >> "%M4_OUTPUT%"
+echo 		`_unnamed_node[color=red, label=^< dnl >> "%M4_OUTPUT%"
+echo 			^<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0"^> dnl >> "%M4_OUTPUT%"
+echo 				^<TR^>^<TD align="left"^>HIGHLIGHT_KEYWORDS(`class') ^<B^>_UNNAMED^</B^>',  >> "%M4_OUTPUT%"
+echo 		pushdef(`CURRENT_CLASS_NAME', NODE_NAME(`$1'))dnl >> "%M4_OUTPUT%"
+echo 		`NODE_NAME(`$1')'`[label=^< dnl >> "%M4_OUTPUT%"
+echo 			^<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0"^> dnl >> "%M4_OUTPUT%"
+echo 				^<TR^>^<TD align="left"^>'HIGHLIGHT_KEYWORDS(ifelse(`$#', `1', `', `template^&lt;'`REPLACE_HTML(shift($@))'`^&gt;^</TD^>^</TR^>^<TR^>^<TD ALIGN="left"^>')`class ^<B^>'REPLACE_HTML(``$1'')^</B^>))'`^</TD^>^</TR^>')dnl  >> "%M4_OUTPUT%"
+echo define(CLASS_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CLASS_NAME(),`$*')'`"^>^&nbsp;^&nbsp;^&nbsp;'`HIGHLIGHT_KEYWORDS(REPLACE_HTML(`$*'))'`^</TD^>^</TR^>')dnl  >> "%M4_OUTPUT%"
+echo define(STATIC_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CLASS_NAME(),`$*')'`"^>^&nbsp;^&nbsp;^&nbsp;^<U^>'`HIGHLIGHT_KEYWORDS(REPLACE_HTML(`$*'))'`^</U^>^</TD^>^</TR^>')dnl  >> "%M4_OUTPUT%"
+echo define(CLASS_END, popdef(`CURRENT_CLASS_NAME')`^</TABLE^>^>];')dnl  >> "%M4_OUTPUT%"
+echo define(COMMENT, `ifelse(`$#', `2', CLASS_COMMENT_BOX(`$1') [shape=box`,' label=^"`$2'^"] >> "%M4_OUTPUT%"
+echo { rank=same; CLASS_COMMENT_BOX(`$1'); `NODE_NAME(`$1')';} >> "%M4_OUTPUT%"
+echo CLASS_COMMENT_BOX(`$1')-^>`NODE_NAME(`$1')' [constraint=false`,' arrowhead=none`,'dir=none], CLASS_MEMBER_COMMENT_BOX(`$1', `$2') [shape=box`,' label="`$3'"] >> "%M4_OUTPUT%"
+REM echo { rank=same; CLASS_MEMBER_COMMENT_BOX(`$1', `$2'); `NODE_NAME(`$1')';} >> "%M4_OUTPUT%"
+echo CLASS_MEMBER_COMMENT_BOX(`$1', `$2')-^>$1:``''PORT_NAME(`$1', `$2') [arrowhead=none`,'dir=none])')dnl >> "%M4_OUTPUT%"
 
 if defined SHOW_DEBUG echo Done.
 if defined M4_ONLY goto end_cleanup_files
 
 if defined SHOW_DEBUG echo Producing DOT output.
-echo strict digraph OptionalGraphName > %DOT_INPUT%
-echo { >> %DOT_INPUT%
-echo graph [dpi=300]; >> %DOT_INPUT%
-echo node [shape=box]; >> %DOT_INPUT%
-echo edge [labeldistance="1.5", labelfontsize="10", arrowhead="none"]; >> %DOT_INPUT%
-echo rankdir=BT; >> %DOT_INPUT%
-type %M4DIFICATION_OUTPUT% >> %DOT_INPUT%
-echo. >> %DOT_INPUT%
-echo } >> %DOT_INPUT%
+echo strict digraph OptionalGraphName > "%DOT_INPUT%"
+echo { >> "%DOT_INPUT%"
+echo graph [dpi=300]; >> "%DOT_INPUT%"
+echo node [shape=box]; >> "%DOT_INPUT%"
+echo edge [labeldistance="1.5", labelfontsize="10", arrowhead="none"]; >> "%DOT_INPUT%"
+echo rankdir=BT; >> "%DOT_INPUT%"
+type %M4DIFICATION_OUTPUT% >> "%DOT_INPUT%"
+echo. >> "%DOT_INPUT%"
+echo } >> "%DOT_INPUT%"
 
 if defined SHOW_DEBUG echo Done.
 
 if defined SHOW_DEBUG echo Performing M4 substitution.
-m4 %M4_OUTPUT% %DOT_INPUT% > %DOT_OUTPUT% || goto end_cleanup_files
+m4 "%M4_OUTPUT%" "%DOT_INPUT%" > "%DOT_OUTPUT%" || goto end_cleanup_files
 
 if defined SHOW_DEBUG echo Done.
 if defined DOT_ONLY goto end_cleanup_files
 
 if defined SHOW_DEBUG echo Executing DOT interpreter.
-dot -T%IMG_TYPE% -o%OUTPUT_FILE% %DOT_OUTPUT% || goto end_cleanup_files
+dot -T%IMG_TYPE% -o"%OUTPUT_FILE%" "%DOT_OUTPUT%" || goto end_cleanup_files
 if defined SHOW_DEBUG echo Done.
 
-if defined VIEW_IMAGE %OUTPUT_FILE%
+if defined VIEW_IMAGE "%OUTPUT_FILE%"
 
 goto end_cleanup_files
 
@@ -303,12 +302,12 @@ goto end
 if defined SHOW_DEBUG set DELETE_SWITCH=/S
 
 if exist %M4DIFICATION_OUTPUT% del %M4DIFICATION_OUTPUT%
-if exist %DOT_INPUT% del %DELETE_SWITCH% %DOT_INPUT%
-if exist %DOT_OUTPUT% (
-	if not defined DOT_ONLY del %DELETE_SWITCH% %DOT_OUTPUT%
+if exist "%DOT_INPUT%" del %DELETE_SWITCH% "%DOT_INPUT%"
+if exist "%DOT_OUTPUT%" (
+	if not defined DOT_ONLY del %DELETE_SWITCH% "%DOT_OUTPUT%"
 )
-if exist %M4_OUTPUT% (
-	if not defined M4_ONLY del %DELETE_SWITCH% %M4_OUTPUT%
+if exist "%M4_OUTPUT%" (
+	if not defined M4_ONLY del %DELETE_SWITCH% "%M4_OUTPUT%"
 )
 
 :end
