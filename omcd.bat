@@ -1,5 +1,4 @@
 @echo off
-setlocal ENABLEDELAYEDEXPANSION
 
 set DOT_ONLY=
 set M4_ONLY=
@@ -113,16 +112,18 @@ if not exist "%INPUT_FILE%" (
 	goto end
 )
 
+setlocal DisableDelayedExpansion
 if defined SHOW_DEBUG echo Performing M4-dificaton of "%INPUT_FILE%".
-
 (
 	for /f "usebackqdelims=" %%a in ("%INPUT_FILE%") do (
 		set "line=%%a"
+		setlocal EnableDelayedExpansion
 		set "line=!line:&=&amp;!"
 		set "line=!line:#=&#35;!"
 		set "line=!line:\[=&#91;!"
 		set "line=!line:\]=&#93;!"
 		echo !line!
+		endlocal
 	)
 ) > %M4DIFICATION_OUTPUT%
 
