@@ -26,7 +26,7 @@
             <Keywords name="Folders in comment, close"></Keywords>
             <Keywords name="Keywords1">CLASS_MEMBER</Keywords>
             <Keywords name="Keywords2">STATIC_MEMBER</Keywords>
-            <Keywords name="Keywords3">COMMENT NODE_NAME</Keywords>
+            <Keywords name="Keywords3">COMMENT NODE_NAME TYPEDEF</Keywords>
             <Keywords name="Keywords4">INHERITANCE COMPOSITION AGGREGATION IMPLEMENTATION ASSOCIATION label taillabel headlabel</Keywords>
             <Keywords name="Keywords5"></Keywords>
             <Keywords name="Keywords6"></Keywords>

@@ -132,13 +132,13 @@ echo Done.
 if defined SHOW_DEBUG echo Producing M4 output.
 echo changecom(/*,*/)dnl > "%M4_OUTPUT%"
 echo changequote dnl >> "%M4_OUTPUT%"
-echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(``````$*'''''', `^<', `^&lt;'), `^>', `^&gt;'), `:', `^&#58;'), `,(\w)', `, \1'), `\\n', `^<BR/^>')')dnl >> "%M4_OUTPUT%"
-echo define(GET_CLASS_NAME, `REPLACE_HTML($1)')dnl >> "%M4_OUTPUT%"
+echo define(REPLACE_HTML, `patsubst(patsubst(patsubst(patsubst(patsubst(patsubst(```````$*''''''', `^<', `^&lt;'), `^>', `^&gt;'), ` +', `^&nbsp;'), `:', `^&#58;'), `,(\w)', `, \1'), `\\n', `^<BR/^>')')dnl >> "%M4_OUTPUT%"
+echo define(GET_CLASS_NAME, `REPLACE_HTML($@)')dnl >> "%M4_OUTPUT%"
 echo %KEYWORD_TEXT_COLOR%dnl >> "%M4_OUTPUT%"
 echo %KEYWORD_TEXT_DECORATION%dnl >> "%M4_OUTPUT%"
 echo define(HIGHLIGHT_TAG, `HIGHLIGHT_TAG_COLOR(HIGHLIGHT_TAG_DECORATION(`$1'))')dnl >> "%M4_OUTPUT%"
 echo define(HIGHLIGHT_TAGS, `ifelse(`$#', `0', `none', `$#', 1, `$1', `$#', 2, `patsubst(`$1', `\b$2\b', HIGHLIGHT_TAG(`$2'))', `$0($0(``$1'', $2), shift(shift($@)))')')dnl >> "%M4_OUTPUT%"
-echo define(HIGHLIGHT_KEYWORDS, `HIGHLIGHT_TAGS(``$*'', `class', `template', `const', `volatile', `struct', `int', `long', `short', `char', `double', `float', `bool', `true', `false', `auto', `typedef', `noexcept', `enum', `constexpr', `signed', `unsigned')')dnl >> "%M4_OUTPUT%"
+echo define(HIGHLIGHT_KEYWORDS, `HIGHLIGHT_TAGS(``$*'', `class', `template', `const', `volatile', `struct', `int', `long', `short', `char', `double', `float', `bool', `true', `false', `auto', `typedef', `noexcept', `enum', `constexpr', `signed', `unsigned', `operator')')dnl >> "%M4_OUTPUT%"
 echo define(NODE_NAME, `translit(`$1', `^<^>:, .*+-()^&#-;', `0123456789abcdefgh')')dnl >> "%M4_OUTPUT%"
 echo define(CLASS_COMMENT_BOX, `NODE_NAME(`$1')`'_COMMENT_BOX')dnl >> "%M4_OUTPUT%"
 echo define(PORT_NAME, `NODE_NAME(`$*')')dnl >> "%M4_OUTPUT%"
@@ -160,6 +160,7 @@ echo 				^<TR^>^<TD align="left"^>'HIGHLIGHT_KEYWORDS(ifelse(`$#', `1', `', `tem
 echo define(CLASS_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CLASS_NAME(),`$*')'`"^>^&nbsp;^&nbsp;^&nbsp;'`HIGHLIGHT_KEYWORDS(REPLACE_HTML(`$*'))'`^</TD^>^</TR^>')dnl  >> "%M4_OUTPUT%"
 echo define(STATIC_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CLASS_NAME(),`$*')'`"^>^&nbsp;^&nbsp;^&nbsp;^<U^>'`HIGHLIGHT_KEYWORDS(REPLACE_HTML(`$*'))'`^</U^>^</TD^>^</TR^>')dnl  >> "%M4_OUTPUT%"
 echo define(CLASS_END, popdef(`CURRENT_CLASS_NAME')`^</TABLE^>^>];')dnl  >> "%M4_OUTPUT%"
+echo define(TYPEDEF, `NODE_NAME(`$1')'`[label=^<GET_CLASS_NAME(`$*')^>];')dnl  >> "%M4_OUTPUT%"
 echo define(COMMENT, `ifelse(`$#', `2', CLASS_COMMENT_BOX(`$1') [shape=box`,' label=^"`$2'^"] >> "%M4_OUTPUT%"
 echo { rank=same; CLASS_COMMENT_BOX(`$1'); `NODE_NAME(`$1')';} >> "%M4_OUTPUT%"
 echo CLASS_COMMENT_BOX(`$1')-^>`NODE_NAME(`$1')' [constraint=false`,' arrowhead=none`,'dir=none], CLASS_MEMBER_COMMENT_BOX(`$1', `$2') [shape=box`,' label="`$3'"] >> "%M4_OUTPUT%"
@@ -210,9 +211,9 @@ echo -kd text_decoration - decorates text used for denoting keywords. The option
 echo 
 echo -h - Show this message.
 echo.
-echo 	The input file must be defined via a set of m4 macros as follows. Each macro invokation must occupy its own line.
+echo 	The input file must be defined via a set of m4 macros as follows. Each macro invocation must occupy its own line.
 echo.
-echo 	Definitions of classes are specified using three macros: CLASS_BEGIN, CLASS_MEMBER, and CLASS_END. The CLASS_BEGIN macro specifies a beginning of a class definition. A zero or more invokations of the CLASS_MEMBER and STATIC_MEMBER macros define a set of members within the class. The CLASS_END macro defines an end to the class definition.
+echo 	Definitions of classes are specified using four macros: TYPEDEF, CLASS_BEGIN, CLASS_MEMBER, and CLASS_END. The TYPEDEF designated a simple type without extra definitions of methods, template parameters, etc. The CLASS_BEGIN macro specifies a beginning of a full class definition. A zero or more invocations of the CLASS_MEMBER and STATIC_MEMBER macros define a set of members within the class. The CLASS_END macro defines an end to the class definition.
 echo 	All invocations of the CLASS_MEMBER and STATIC_MEMBER macros must be encompassed by only one CLASS_BEGIN-CLASS_END pair.
 echo 	The relations between different classes are specified as for a dot compiler, i.e. with arrows ("-^>") with the difference that all node names must be produced via the NODE_NAME macro invoked with an actual name of the class. Also, the type of the relation is defined by the macros ASSOCIATION, IMPLEMENTATION, INHERITANCE, AGGREGATION or COMPOSITION. This type, which may optionally be accompanied by headlabel="text", taillabel="text", and label="text" specifications, must be enclosed by square brackets ("[" and "]") and placed to the right of the relation specification. A headlabel mark specifies a text associated with an object of the relation, i.e. a class receiving the relation. A taillabel mark specifies a subject of the relation, i.e. a class initiating the relation. Also, a label mark can associate some text with the relation itself. All of the marks are optional. For instance, if a class A aggregates a class B, then their relation is specified as:
 echo	NODE_NAME(A)-^>NODE_NAME(B) [AGGREGATION, headlabel="A label near the class A", taillabel = "A label near the class B", label = "A description of the relation"].
@@ -228,7 +229,8 @@ echo 	When the class is referenced, one should use NODE_NAME(element_name, templ
 echo 	CLASS_MEMBER(member_name) - adds a member of a class within a definition of the class delimited by the CLASS_BEGIN and CLASS_END macros. The member_name parameter, always specified WITHOUT quotation marks, can specify template parameters of the member, ordinary parameters, a return type, and a UML accessor ("-" - for private members, "#" - for protected members, "+" - for public members. All these elements, except for a name of the element itself, are optional.
 echo 	STATIC_MEMBER(member_name) - adds a static member of a class within a definition of the class. Its requirements and behaviour is the same as for the CLASS_MEMBER macro except that the output for static members is underlined.
 echo 	CLASS_END - defines an end of a class definition begun by the corresponding CLASS_BEGIN macro.
-echo 	NODE_NAME(element_name, template_parameter_1, ..., template_parameter_n) - is used to produce a DOT-compatible node name for a given name of an element. The macro is used to refer to names given with escape symbols or special symbols (like asterisks, angle brackets, etc.). To match a name specified by the CLASS_BEGIN macro, the parameters of NODE_NAME must be the same. Moreover, it is advised to supply a class definition for every node, even if the class has no members, especially if the class declaration is complex (e.g. it is a template or template specialization).
+echo 	TYPEDEF - defines a simple type name with no members or special decorations of text performed by the CLASS_* macros. The TYPEDEF types can participate in relation definitions and refered to with the NODE_NAME macro.
+echo 	NODE_NAME(element_name, template_parameter_1, ..., template_parameter_n) - is used to produce a DOT-compatible node name for a given name of an element. The macro is used to refer to names given with escape symbols or special symbols (like asterisks, angle brackets, etc.). To match a name specified by the TYPEDEF or CLASS_BEGIN macros, the parameter of NODE_NAME must be the same. Moreover, it is advised to supply a class definition for every node, even if the class has no members, especially if the class declaration is complex (e.g. it is a template or template specialization).
 echo 	ASSOCIATION - is specified as a parameter of a relation between classes to specify the association relation.
 echo 	IMPLEMENTATION - is specified as a parameter of a relation between classes to specify that a subject of the relation implements an object of the relation.
 echo 	INHERITANCE - is specified as a parameter of a relation between classes to specify inheritance of a subject of the relation from an object of the relation.
@@ -238,7 +240,7 @@ echo 	headlabel="text" - is an optional parameter of a relation between classes 
 echo 	taillabel="text" - is an optional parameter of a relation between classes to specify a text mark near a subject of the relation.
 echo 	label="text" - is an optional parameter of a relation between classes to specify a text associated with the relation itself.
 echo 	COMMENT(class_name, comment_text) associates a visual comment with the specified class. The visual layout of the comment is box with the comment_text. The box is associated with the class. Classes with complex names, like templates and template specializations, should be processed with the NODE_NAME macro beforehand. E.g. COMMENT(NODE_NAME(`A^<T*, int^>', class T), `Comment text').
-echo 	COMMENT(class_name, member_name, comment_text) - [NOT RECOMMENDED] a for of a commment visually associated with a specific member of the specified class. The line connecting the command box with the member will be attached in the vicinity of the member in the resulting graph. The class_name must be processed via the NODE_NAME macro prior to the call. The member name must be specified exactly how it was specified during its class definition. I.e. member_name should receive the value of member_name, specified with the quotation marks ("`" and "'") of the corresponding CLASS_MEMBER or STATIC_MEMBER invokation. The use of the definition is not recomended due to the bug in graphviz which does not match ports of nodes with the 'rank=same' subgraph property and the constraint=false edge property. Use class comments instead.
+echo 	COMMENT(class_name, member_name, comment_text) - [NOT RECOMMENDED] a for of a commment visually associated with a specific member of the specified class. The line connecting the command box with the member will be attached in the vicinity of the member in the resulting graph. The class_name must be processed via the NODE_NAME macro prior to the call. The member name must be specified exactly how it was specified during its class definition. I.e. member_name should receive the value of member_name, specified with the quotation marks ("`" and "'") of the corresponding CLASS_MEMBER or STATIC_MEMBER invocation. The use of the definition is not recomended due to the bug in graphviz which does not match ports of nodes with the 'rank=same' subgraph property and the constraint=false edge property. Use class comments instead.
 echo.
 echo ==Example of possible input==
 echo CLASS_BEGIN(ClassTemplate, class template_type_param, std::size_t non_type_param, template ^<class...^> class...template_template_param)
@@ -280,6 +282,10 @@ echo.
 echo NODE_NAME(Association2)-^>NODE_NAME(Interface1)[IMPLEMENTATION]
 echo NODE_NAME(Association1)-^>NODE_NAME(Interface1)[IMPLEMENTATION]
 echo NODE_NAME(`Composition')-^>NODE_NAME(Element) [COMPOSITION, headlabel="*", taillabel="1"]
+echo.
+echo TYPEDEF(base_type)
+echo NODE_NAME(DerivedClass)-^>NODE_NAME(base_type) [INHERITANCE]
+echo.
 echo.
 echo define(MNN, `NODE_NAME($@)') dnl One has access to M4 commands...
 echo define(Specialization, ``ClassTemplate^<template_type_param*, 123, int, void*^>', class template_type_param') /*...and as well as dot commands...*/
