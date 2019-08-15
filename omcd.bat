@@ -162,6 +162,7 @@ echo define(CLASS_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CL
 echo define(STATIC_MEMBER, `	^<TR^>^<TD align="left" PORT="'`PORT_NAME(CURRENT_CLASS_NAME(),`$*')'`"^>^&nbsp;^&nbsp;^&nbsp;^<U^>'`HIGHLIGHT_COMMENTS(HIGHLIGHT_KEYWORDS(REPLACE_HTML(`$*'))'`^</U^>^</TD^>^</TR^>')dnl  >> "%M4_OUTPUT%"
 echo define(CLASS_END, popdef(`CURRENT_CLASS_NAME')`^</TABLE^>^>];')dnl  >> "%M4_OUTPUT%"
 echo define(TYPEDEF, `NODE_NAME(`$1')'`[label=^<GET_CLASS_NAME(`$*')^>];')dnl  >> "%M4_OUTPUT%"
+echo define(TYPEDEF_BOLD, `NODE_NAME(`$1')'`[label=^<^<B^>GET_CLASS_NAME(`$*')^</B^>^>];')dnl  >> "%M4_OUTPUT%"
 echo define(COMMENT, `ifelse(`$#', `2', CLASS_COMMENT_BOX(`$1') [shape=box`,' label=^"`$2'^"] >> "%M4_OUTPUT%"
 echo { rank=same; CLASS_COMMENT_BOX(`$1'); `NODE_NAME(`$1')';} >> "%M4_OUTPUT%"
 echo CLASS_COMMENT_BOX(`$1')-^>`NODE_NAME(`$1')' [constraint=false`,' arrowhead=none`,'dir=none], CLASS_MEMBER_COMMENT_BOX(`$1', `$2') [shape=box`,' label="`$3'"] >> "%M4_OUTPUT%"
@@ -231,6 +232,7 @@ echo 	CLASS_MEMBER(member_name) - adds a member of a class within a definition o
 echo 	STATIC_MEMBER(member_name) - adds a static member of a class within a definition of the class. Its requirements and behaviour is the same as for the CLASS_MEMBER macro except that the output for static members is underlined.
 echo 	CLASS_END - defines an end of a class definition begun by the corresponding CLASS_BEGIN macro.
 echo 	TYPEDEF - defines a simple type name with no members or special decorations of text performed by the CLASS_* macros. The TYPEDEF types can participate in relation definitions and refered to with the NODE_NAME macro.
+echo 	TYPEDEF_BOLD - similarly defines a simple type but separating it out with the bold font weight.
 echo 	NODE_NAME(element_name, template_parameter_1, ..., template_parameter_n) - is used to produce a DOT-compatible node name for a given name of an element. The macro is used to refer to names given with escape symbols or special symbols (like asterisks, angle brackets, etc.). To match a name specified by the TYPEDEF or CLASS_BEGIN macros, the parameter of NODE_NAME must be the same. Moreover, it is advised to supply a class definition for every node, even if the class has no members, especially if the class declaration is complex (e.g. it is a template or template specialization).
 echo 	ASSOCIATION - is specified as a parameter of a relation between classes to specify the association relation.
 echo 	IMPLEMENTATION - is specified as a parameter of a relation between classes to specify that a subject of the relation implements an object of the relation.
